@@ -67,6 +67,9 @@ class Capture(models.Model):
         self.confidence = preds[i] * 100
         self.most_confident_label = label
 
+        if self.confidence is not None:                    
+            super().save(update_fields=['most_confident_label', 'confidence'])
+
     def admin_image(self):
         return mark_safe('<a href="{url}"><img src="{url}" width="{width}" height={height} /></a>'.format(
             url=self.frame.url,

@@ -26,7 +26,7 @@ class CaptureViewSet(viewsets.ModelViewSet):
 def send_img(request):
     if request.method == 'POST':
         # Verificar si el archivo está presente en la solicitud
-        imagen = request.FILES.get('file', None)
+        imagen = request.FILES.get('imageFile', None)
         if imagen is not None:
             try:
                 # Guardar la imagen directamente en el modelo
