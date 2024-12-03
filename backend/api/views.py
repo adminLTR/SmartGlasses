@@ -12,7 +12,7 @@ from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.shortcuts import render
 
-class ResidueViewSet(viewsets.ModelViewSet):
+class CaptureViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows Residues to be viewed or edited.
     """

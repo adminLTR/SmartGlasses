@@ -23,8 +23,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 router = routers.DefaultRouter()
-router.register(r'residues', views.ResidueViewSet)
-router.register(r'trash_cans', views.TrashCanViewSet)
+router.register(r'captures', views.CaptureViewSet)
 
 admin.site.site_title = "APIS"
 admin.site.site_header = "APIS"
