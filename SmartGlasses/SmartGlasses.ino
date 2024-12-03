@@ -213,9 +213,9 @@ void setup() {
 }
 
 void loop() {
-  unsigned long currentMillis = millis();
-  if (currentMillis - previousMillis >= timerInterval) {
-    captureAndSendImage();
-    previousMillis = currentMillis;
-  }
+  // unsigned long currentMillis = millis();
+  // if (currentMillis - previousMillis >= timerInterval) {
+  //   captureAndSendImage();
+  //   previousMillis = currentMillis;
+  // }
 }
