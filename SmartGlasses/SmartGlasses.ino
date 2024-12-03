@@ -1,71 +1,111 @@
 #include "esp_camera.h"
 #include <WiFi.h>
+#include <HTTPClient.h>
 
 #define CAMERA_MODEL_AI_THINKER // Has PSRAM
 #include "camera_pins.h"
-
 // ===========================
 // Enter your WiFi credentials
 // ===========================
 const char *ssid = "LT";
 const char *password = "petrikldeidad";
 
-const char* api_url = "http://192.168.1.1:8000/sendImg/";
+const char* api_url = "http://192.168.149.193:8000/api/sendImg/";
+
+String serverName = "192.168.149.193";   // REPLACE WITH YOUR Raspberry Pi IP ADDRESS
+//String serverName = "example.com";   // OR REPLACE WITH YOUR DOMAIN NAME
+
+String serverPath = "/api/sendImg/";     // The default serverPath should be upload.php
+
+const int serverPort = 8000;
+
+WiFiClient client;
+const int timerInterval = 30000;    // time between each HTTP POST image
+unsigned long previousMillis = 0;   // last time image was sent
 
 void startCameraServer();
-void setupLedFlash(int pin) {
-    ledcAttach(pin, 5000, 8);
-}
-
+void setupLedFlash(int pin);
 // Función para capturar y enviar la imagen
-void captureAndSendImage() {
-  // Capturar la imagen
-  camera_fb_t* fb = esp_camera_fb_get();
+String captureAndSendImage() {
+  String getAll;
+  String getBody;
+  camera_fb_t* fb = NULL;
+  fb = esp_camera_fb_get();
   if (!fb) {
-    Serial.println("Error al capturar la imagen");
-    return;
+    Serial.println("Error al capturar la imagen: Frame buffer es NULL");
+    return "";
   }
 
-  // Crear la solicitud HTTP
-  HTTPClient http;
-  http.begin(api_url);
-
-  String boundary = "----ESP32Boundary";
-  String contentType = "multipart/form-data; boundary=" + boundary;
-
-  // Crear el cuerpo de la solicitud
-  String bodyStart = "--" + boundary + "\r\n";
-  bodyStart += "Content-Disposition: form-data; name=\"file\"; filename=\"image.jpg\"\r\n";
-  bodyStart += "Content-Type: image/jpeg\r\n\r\n";
-
-  String bodyEnd = "\r\n--" + boundary + "--\r\n";
-
-  // Calcular la longitud del contenido
-  int contentLength = bodyStart.length() + fb->len + bodyEnd.length();
-
-  // Establecer encabezados
-  http.addHeader("Content-Type", contentType);
-  http.addHeader("Content-Length", String(contentLength));
-
-  // Enviar la solicitud
-  WiFiClient* stream = http.getStreamPtr();
-  stream->print(bodyStart);
-  stream->write(fb->buf, fb->len); // Datos binarios de la imagen
-  stream->print(bodyEnd);
-
-  // Obtener la respuesta del servidor
-  int httpResponseCode = http.POST("");
-  if (httpResponseCode > 0) {
-    Serial.printf("Código de respuesta HTTP: %d\n", httpResponseCode);
-  } else {
-    Serial.printf("Error al enviar imagen: %s\n", http.errorToString(httpResponseCode).c_str());
+  if (fb->len > 160000) {
+    Serial.println("Imagen demasiado grande para enviar");
+    esp_camera_fb_return(fb);
+    return "";
   }
 
-  // Liberar el frame buffer y finalizar la solicitud HTTP
-  esp_camera_fb_return(fb);
-  http.end();
+  Serial.println("Connecting to server: " + serverName);
+
+  if (client.connect(serverName.c_str(), serverPort)) {
+    Serial.println("Connection successful!");    
+    String head = "--RandomNerdTutorials\r\nContent-Disposition: form-data; name=\"imageFile\"; filename=\"esp32-cam.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n";
+    String tail = "\r\n--RandomNerdTutorials--\r\n";
+
+    uint32_t imageLen = fb->len;
+    uint32_t extraLen = head.length() + tail.length();
+    uint32_t totalLen = imageLen + extraLen;
+  
+    client.println("POST " + serverPath + " HTTP/1.1");
+    client.println("Host: " + serverName);
+    client.println("Content-Length: " + String(totalLen));
+    client.println("Content-Type: multipart/form-data; boundary=RandomNerdTutorials");
+    client.println();
+    client.print(head);
+  
+    uint8_t *fbBuf = fb->buf;
+    size_t fbLen = fb->len;
+    for (size_t n=0; n<fbLen; n=n+1024) {
+      if (n+1024 < fbLen) {
+        client.write(fbBuf, 1024);
+        fbBuf += 1024;
+      }
+      else if (fbLen%1024>0) {
+        size_t remainder = fbLen%1024;
+        client.write(fbBuf, remainder);
+      }
+    }   
+    client.print(tail);
+    
+    esp_camera_fb_return(fb);
+    
+    int timoutTimer = 10000;
+    long startTimer = millis();
+    boolean state = false;
+    
+    while ((startTimer + timoutTimer) > millis()) {
+      Serial.print(".");
+      delay(100);      
+      while (client.available()) {
+        char c = client.read();
+        if (c == '\n') {
+          if (getAll.length()==0) { state=true; }
+          getAll = "";
+        }
+        else if (c != '\r') { getAll += String(c); }
+        if (state==true) { getBody += String(c); }
+        startTimer = millis();
+      }
+      if (getBody.length()>0) { break; }
+    }
+    Serial.println();
+    client.stop();
+    Serial.println(getBody);
+  }
+  else {
+    getBody = "Connection to " + serverName +  " failed.";
+    Serial.println(getBody);
+  }
+  return getBody;  
+
 }
-
 void setup() {
   Serial.begin(115200);
   Serial.setDebugOutput(true);
@@ -93,12 +133,37 @@ void setup() {
   config.xclk_freq_hz = 20000000;
   config.frame_size = FRAMESIZE_UXGA;
   config.pixel_format = PIXFORMAT_JPEG;  // for streaming
+  //config.pixel_format = PIXFORMAT_RGB565; // for face detection/recognition
+  config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
   config.fb_location = CAMERA_FB_IN_PSRAM;
+  config.jpeg_quality = 12;
+  config.fb_count = 1;
 
-  config.jpeg_quality = 10;
-  config.fb_count = 2;
-  config.grab_mode = CAMERA_GRAB_LATEST;
-    
+  // if PSRAM IC present, init with UXGA resolution and higher JPEG quality
+  //                      for larger pre-allocated frame buffer.
+  if (config.pixel_format == PIXFORMAT_JPEG) {
+    if (psramFound()) {
+      config.jpeg_quality = 10;
+      config.fb_count = 2;
+      config.grab_mode = CAMERA_GRAB_LATEST;
+    } else {
+      // Limit the frame size when PSRAM is not available
+      config.frame_size = FRAMESIZE_SVGA;
+      config.fb_location = CAMERA_FB_IN_DRAM;
+    }
+  } else {
+    // Best option for face detection/recognition
+    config.frame_size = FRAMESIZE_240X240;
+#if CONFIG_IDF_TARGET_ESP32S3
+    config.fb_count = 2;
+#endif
+  }
+
+#if defined(CAMERA_MODEL_ESP_EYE)
+  pinMode(13, INPUT_PULLUP);
+  pinMode(14, INPUT_PULLUP);
+#endif
+
   // camera init
   esp_err_t err = esp_camera_init(&config);
   if (err != ESP_OK) {
@@ -118,7 +183,19 @@ void setup() {
     s->set_framesize(s, FRAMESIZE_QVGA);
   }
 
+#if defined(CAMERA_MODEL_M5STACK_WIDE) || defined(CAMERA_MODEL_M5STACK_ESP32CAM)
+  s->set_vflip(s, 1);
+  s->set_hmirror(s, 1);
+#endif
+
+#if defined(CAMERA_MODEL_ESP32S3_EYE)
+  s->set_vflip(s, 1);
+#endif
+
+// Setup LED FLash if LED pin is defined in camera_pins.h
+#if defined(LED_GPIO_NUM)
   setupLedFlash(LED_GPIO_NUM);
+#endif
 
   WiFi.begin(ssid, password);
   WiFi.setSleep(false);
@@ -138,7 +215,9 @@ void setup() {
 }
 
 void loop() {
-  // Do nothing. Everything is done in another task by the web server
-  captureAndSendImage();
-  delay(10000);
+  unsigned long currentMillis = millis();
+  if (currentMillis - previousMillis >= timerInterval) {
+    captureAndSendImage();
+    previousMillis = currentMillis;
+  }
 }

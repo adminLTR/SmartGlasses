@@ -84,9 +84,9 @@ void enable_led(bool en) {  // Turn LED On or Off
 static esp_err_t bmp_handler(httpd_req_t *req) {
   camera_fb_t *fb = NULL;
   esp_err_t res = ESP_OK;
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
-  uint64_t fr_start = esp_timer_get_time();
-#endif
+  #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
+    uint64_t fr_start = esp_timer_get_time();
+  #endif
   fb = esp_camera_fb_get();
   if (!fb) {
     log_e("Camera capture failed");
@@ -113,9 +113,9 @@ static esp_err_t bmp_handler(httpd_req_t *req) {
   }
   res = httpd_resp_send(req, (const char *)buf, buf_len);
   free(buf);
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
-  uint64_t fr_end = esp_timer_get_time();
-#endif
+  #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
+    uint64_t fr_end = esp_timer_get_time();
+  #endif
   log_i("BMP: %llums, %uB", (uint64_t)((fr_end - fr_start) / 1000), buf_len);
   return res;
 }
@@ -158,13 +158,13 @@ static esp_err_t capture_handler(httpd_req_t *req) {
   snprintf(ts, 32, "%lld.%06ld", fb->timestamp.tv_sec, fb->timestamp.tv_usec);
   httpd_resp_set_hdr(req, "X-Timestamp", (const char *)ts);
 
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
-    size_t fb_len = 0;
-#endif
+  #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
+      size_t fb_len = 0;
+  #endif
     if (fb->format == PIXFORMAT_JPEG) {
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
-      fb_len = fb->len;
-#endif
+  #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
+        fb_len = fb->len;
+  #endif
       res = httpd_resp_send(req, (const char *)fb->buf, fb->len);
     } else {
       jpg_chunking_t jchunk = {req, 0};
@@ -783,5 +783,5 @@ void startCameraServer() {
 }
 
 void setupLedFlash(int pin) {
-  ledcAttachPin(pin, 8);
+  ledcAttach(pin, 5000, 8);
 }
