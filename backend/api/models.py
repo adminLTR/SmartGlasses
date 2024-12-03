@@ -20,6 +20,8 @@ class Capture(models.Model):
     datetime = models.DateTimeField("Date and time of detection", auto_now_add=True, null=True)
     most_confident_label = models.CharField(max_length=50, blank=True, null=True)
     confidence = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    latitude = models.FloatField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
