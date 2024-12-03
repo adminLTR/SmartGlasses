@@ -5,7 +5,7 @@ from .models import Capture
 
 class CaptureAdmin(admin.ModelAdmin):
 
-    list_display = ("id", 'admin_image', 'datetime', 'most_confident_label', 'confidence')
+    list_display = ("id", 'admin_image', 'datetime', 'placa')
 
     ordering = ('-datetime',)
 

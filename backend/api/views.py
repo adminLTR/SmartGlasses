@@ -34,13 +34,12 @@ def send_img(request):
                 nuevo_registro.frame.save(f'{rd.randint(10, 10000)}.jpg', imagen)
 
                 # Verificar si la imagen fue procesada correctamente
-                if nuevo_registro.most_confident_label is None or nuevo_registro.confidence is None:
+                if nuevo_registro.placa is None:
                     return JsonResponse({'error': "Image not detected"}, status=400)
 
                 # Responder con los datos procesados
                 return JsonResponse({
-                    'most_confident_label': nuevo_registro.most_confident_label,
-                    'confidence': nuevo_registro.confidence,
+                    'placa': nuevo_registro.placa,
                 })
 
             except Exception as e:

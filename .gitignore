@@ -9,6 +9,9 @@ media
 # Backup files # 
 *.bak 
 
+*.keras
+*.h5
+
 # If you are using PyCharm # 
 # User-specific stuff
 .idea/**/workspace.xml

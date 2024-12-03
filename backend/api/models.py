@@ -11,66 +11,60 @@ import cv2
 from django.utils.safestring import mark_safe
 from django.core.files.base import ContentFile
 import io
-
-import imutils
-import os
+import tensorflow as tf
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+import pytesseract as pt
 
 class Capture(models.Model): 
     frame = models.ImageField(upload_to="frames/", null=True)
     datetime = models.DateTimeField("Date and time of detection", auto_now_add=True, null=True)
-    most_confident_label = models.CharField(max_length=50, blank=True, null=True)
-    confidence = models.FloatField(null=True, blank=True)
+    
     longitude = models.FloatField(null=True, blank=True)
     latitude = models.FloatField(null=True, blank=True)
+    placa = models.CharField(null=True, blank=True, max_length=20)
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         if self.frame:
-            self.process_image_for_detection()
+            self.OCR()
 
-    def process_image_for_detection(self):
-        # Model architecture and weights
-        #prototxt = "api/MobileNetSSD_deploy.prototxt.txt"
-        #model = "api/MobileNetSSD_deploy.caffemodel"
-        TARGET_SIZE = (224, 224)
+    def process_image(self):
+        model = tf.keras.models.load_model("api/model.keras")
+
+        image = load_img(self.frame.path) # PIL object
+        image = np.array(image,dtype=np.uint8) # 8 bit array (0,255)
+        image1 = load_img(self.frame.path,target_size=(224,224))
+
+        # Redimensionar la imagen para la predicción
+        image_arr_224 = img_to_array(image1)/255.0 # Convert to array & normalized
+        h,w,d = image.shape
+        test_arr = image_arr_224.reshape(1,224,224,3)
+
+        # Hacer la predicción
+        coords = model.predict(test_arr)
         
+        # Denormalizar las coordenadas
+        denorm = np.array([w, w, h, h])  # Para ajustar las coordenadas a la escala original
+        coords = coords * denorm  # Multiplicar por las dimensiones de la imagen original
+        coords = coords.astype(np.int32)  # Asegurarse de que las coordenadas son enteros
+        
+        return coords  # Devolver las coordenadas de la caja
+        
+    def OCR(self):
+        img = np.array(load_img(self.frame.path))
+        coords = self.process_image()
+        xmin, xmax, ymin, ymax = coords[0]
+        
+        img = np.array(load_img(self.frame.path))
+        xmin ,xmax,ymin,ymax = coords[0]
+        roi = img[ymin-20:ymax+20,xmin-20:xmax+20]
+        
+        placa = pt.image_to_string(roi)
 
-        # Load the model
-        #net = cv2.dnn.readNetFromCaffe(prototxt, model)
-        model = load_model('api/hack_mobilenet.h5')
-
-        # Preprocess the image for object detection
-        open_cv_image = cv2.imread(self.frame.path)
-        img = load_img(self.frame.path, target_size = TARGET_SIZE)
-        img  = img_to_array(img)
-
-        # our model was trained on RGB ordered images but OpenCV represents
-        # images in BGR order, so swap the channels, and then resize to
-        # 224x224 (the input dimensions for VGG16)
-        open_cv_image = cv2.cvtColor(open_cv_image, cv2.COLOR_BGR2RGB)
-        open_cv_image = cv2.resize(open_cv_image, TARGET_SIZE)
-
-        # convert the image to a floating point data type and perform mean
-        # subtraction
-        open_cv_image = open_cv_image.astype("float32") / 255.
-        img = np.expand_dims(img, axis = 0)
-        img = preprocess_input(img)
-
-        # Class labels
-        waste_types = ['CARTON', 'VIDRIO', 'METAL', 'PAPEL', 'PLASTICO', 'GENERAL']
-
-        # pass the image through the network to obtain our predictions
-        # preds = model.predict(np.expand_dims(image / 255., axis=0))[0]
-        preds = model.predict(img)[0]
-
-        i = np.argmax(preds)
-        label = waste_types[i]
-
-        self.confidence = preds[i] * 100
-        self.most_confident_label = label
-
-        if self.confidence is not None:                    
-            super().save(update_fields=['most_confident_label', 'confidence'])
+        self.placa = placa
+        if self.placa is not None:                    
+            super().save(update_fields=['placa'])
+        
 
     def admin_image(self):
         return mark_safe('<a href="{url}"><img src="{url}" width="{width}" height={height} /></a>'.format(
