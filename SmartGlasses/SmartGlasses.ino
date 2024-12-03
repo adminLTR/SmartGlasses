@@ -10,9 +10,60 @@
 const char *ssid = "LT";
 const char *password = "petrikldeidad";
 
+const char* api_url = "http://192.168.1.1:8000/sendImg/";
+
 void startCameraServer();
 void setupLedFlash(int pin) {
     ledcAttach(pin, 5000, 8);
+}
+
+// Función para capturar y enviar la imagen
+void captureAndSendImage() {
+  // Capturar la imagen
+  camera_fb_t* fb = esp_camera_fb_get();
+  if (!fb) {
+    Serial.println("Error al capturar la imagen");
+    return;
+  }
+
+  // Crear la solicitud HTTP
+  HTTPClient http;
+  http.begin(api_url);
+
+  String boundary = "----ESP32Boundary";
+  String contentType = "multipart/form-data; boundary=" + boundary;
+
+  // Crear el cuerpo de la solicitud
+  String bodyStart = "--" + boundary + "\r\n";
+  bodyStart += "Content-Disposition: form-data; name=\"file\"; filename=\"image.jpg\"\r\n";
+  bodyStart += "Content-Type: image/jpeg\r\n\r\n";
+
+  String bodyEnd = "\r\n--" + boundary + "--\r\n";
+
+  // Calcular la longitud del contenido
+  int contentLength = bodyStart.length() + fb->len + bodyEnd.length();
+
+  // Establecer encabezados
+  http.addHeader("Content-Type", contentType);
+  http.addHeader("Content-Length", String(contentLength));
+
+  // Enviar la solicitud
+  WiFiClient* stream = http.getStreamPtr();
+  stream->print(bodyStart);
+  stream->write(fb->buf, fb->len); // Datos binarios de la imagen
+  stream->print(bodyEnd);
+
+  // Obtener la respuesta del servidor
+  int httpResponseCode = http.POST("");
+  if (httpResponseCode > 0) {
+    Serial.printf("Código de respuesta HTTP: %d\n", httpResponseCode);
+  } else {
+    Serial.printf("Error al enviar imagen: %s\n", http.errorToString(httpResponseCode).c_str());
+  }
+
+  // Liberar el frame buffer y finalizar la solicitud HTTP
+  esp_camera_fb_return(fb);
+  http.end();
 }
 
 void setup() {
@@ -88,5 +139,6 @@ void setup() {
 
 void loop() {
   // Do nothing. Everything is done in another task by the web server
+  captureAndSendImage();
   delay(10000);
 }
