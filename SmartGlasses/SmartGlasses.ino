@@ -10,8 +10,6 @@
 const char *ssid = "LT";
 const char *password = "petrikldeidad";
 
-const char* api_url = "http://192.168.149.193:8000/api/sendImg/";
-
 String serverName = "192.168.149.193";   // REPLACE WITH YOUR Raspberry Pi IP ADDRESS
 //String serverName = "example.com";   // OR REPLACE WITH YOUR DOMAIN NAME
 
