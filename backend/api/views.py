@@ -40,6 +40,7 @@ def send_img(request):
                 # Responder con los datos procesados
                 return JsonResponse({
                     'placa': nuevo_registro.placa,
+                    'confidence' : nuevo_registro.confidence
                 })
 
             except Exception as e:

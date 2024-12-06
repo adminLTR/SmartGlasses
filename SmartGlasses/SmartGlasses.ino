@@ -210,6 +210,7 @@ void setup() {
   Serial.print("Camera Ready! Use 'http://");
   Serial.print(WiFi.localIP());
   Serial.println("' to connect");
+  pinMode(12, OUTPUT);
 }
 
 void loop() {
@@ -218,4 +219,8 @@ void loop() {
   //   captureAndSendImage();
   //   previousMillis = currentMillis;
   // }
+  digitalWrite(12, 1);
+  delay(1000);
+  digitalWrite(12, 0);
+  delay(1000);
 }
