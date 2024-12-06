@@ -3,6 +3,7 @@
 #include <HTTPClient.h>
 
 #define CAMERA_MODEL_AI_THINKER // Has PSRAM
+
 #include "camera_pins.h"
 // ===========================
 // Enter your WiFi credentials
