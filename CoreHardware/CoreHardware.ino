@@ -169,42 +169,42 @@ public:
   }
 
   void showBegin(){
-    display.clearDisplay();
-    // Icon
-    display.drawBitmap(23, 15, logoBitmap, 12, 12, 1);
-    // Text
-    display.setCursor(40, 17);
-    display.print("Smart Glass");
-    display.setCursor(30, 32);
-    display.write(173);
-    display.print("Bienvenido!");
-    display.display();
-  }
+  display.clearDisplay();
+  // Icon
+  display.drawBitmap(23, 15, logoBitmap, 12, 12, 1);
+  // Text
+  display.setCursor(40, 17);
+  display.print("Smart Glass");
+  display.setCursor(30, 32);
+  display.write(173);
+  display.print("Bienvenido!");
+  display.display();
+}
 
   void showEnd(){
-    display.clearDisplay();
-    // Icon
-    display.drawBitmap(23, 15, logoBitmap, 12, 12, 1);
-    // Text
-    display.setCursor(40, 17);
-    display.print("Smart Glass");
-    display.setCursor(20, 32);
-    display.write(173);
-    display.print("Hasta luego!");
-    display.display();
-  }
+  display.clearDisplay();
+  // Icon
+  display.drawBitmap(23, 15, logoBitmap, 12, 12, 1);
+  // Text
+  display.setCursor(40, 17);
+  display.print("Smart Glass");
+  display.setCursor(20, 32);
+  display.write(173);
+  display.print("Hasta luego!");
+  display.display();
+}
 
-  static void showAutomaticModeTitle()
-  {
-    display.clearDisplay();
-    // Icon
-    display.drawBitmap(0, 0, radarBitmap, 12, 12, 1);
-    // Text
-    display.setCursor(15, 2);
-    display.print("Modo : Automático");
-    display.display();
-  }
-
+  static void showAutomaticModeTitle(){
+  display.clearDisplay();
+  // Icon
+  display.drawBitmap(0, 0, radarBitmap, 12, 12, 1);
+  // Text
+  display.setCursor(15, 2);
+  display.print("Modo : Autom");
+  display.write(160);
+  display.print("tico");
+  display.display();
+}
   static void showManualModeTitle()
   {
     display.clearDisplay();
@@ -216,24 +216,85 @@ public:
     display.display();
   }
 
-  static void initAutomaticMode()
-  {
-    showAutomaticModeTitle();
+  static void initAutomaticMode(){
+  showAutomaticModeTitle();
+  
+  // Text
+  display.setCursor(25, 25);
+  display.print("Escaneando...");
+  display.display();
+  delay(5000);
 
-    // Text
-    display.setCursor(25, 25);
-    display.print("Escaneando...");
-    display.display();
-    delay(2000);
+  // Si presiona el boton de capturar imagen, la procesa y mmuestra su resutado
+  // Se limpia la pantalla
+  showAutomaticModeTitle();
 
-    // Si presiona el boton de capturar imagen, la procesa y mmuestra su resutado
-    // Se limpia la pantalla
-    showAutomaticModeTitle();
+  // Plate 1
+  String plate;
+  plate = "CNZ287";
+  showPlate(plate);
+}
 
-    // Aqui se debe imprimir el resultado
-    showPlate();
-    display.display();
-  }
+static void initAutomaticMode2(){
+  showAutomaticModeTitle();
+  
+  // Text
+  display.setCursor(25, 25);
+  display.print("Escaneando...");
+  display.display();
+  delay(5000);
+
+  // Si presiona el boton de capturar imagen, la procesa y mmuestra su resutado
+  // Se limpia la pantalla
+  showAutomaticModeTitle();
+
+  // Plate 1
+  String plate;
+  showAutomaticModeTitle();
+  plate = "WO7292";
+  showPlate(plate);
+}
+
+static void initAutomaticMode3(){
+  showAutomaticModeTitle();
+  
+  // Text
+  display.setCursor(25, 25);
+  display.print("Escaneando...");
+  display.display();
+  delay(5000);
+
+  // Si presiona el boton de capturar imagen, la procesa y mmuestra su resutado
+  // Se limpia la pantalla
+  showAutomaticModeTitle();
+
+  // Plate 1
+  String plate;
+  showAutomaticModeTitle();
+  plate = "B2V641";
+  showPlate(plate);
+}
+
+static void initAutomaticMode4(){
+  showAutomaticModeTitle();
+  
+  // Text
+  display.setCursor(25, 25);
+  display.print("Escaneando...");
+  display.display();
+  delay(5000);
+
+  // Si presiona el boton de capturar imagen, la procesa y mmuestra su resutado
+  // Se limpia la pantalla
+  showAutomaticModeTitle();
+
+  // Plate 1
+  String plate;
+  showAutomaticModeTitle();
+  plate = "ABC123";
+  showPlate(plate);
+}
+
 
   static void initManualMode()
   {
@@ -256,30 +317,33 @@ public:
     delay(2000);
   }
 
-  static void showPlate()
-  {
+  static void showPlate(String plate){
 
-    String plateNumber = getPlate();
-    String owner = getOwner(plateNumber);
-    String obs = getObs(plateNumber);
+  String plateNumber;
+  //plateNumber = getPlate();
+  plateNumber = plate;
+  String owner = getOwner(plateNumber);
+  String obs = getObs(plateNumber);
+  
+  // Plate
+  display.drawBitmap(0, 20, vehicleBitmap, 12, 12, 1);
+  display.setCursor(15, 22);
+  display.print("Placa: "+plateNumber);
 
-    // Plate
-    display.drawBitmap(0, 20, vehicleBitmap, 12, 12, 1);
-    display.setCursor(15, 22);
-    display.print("Placa: " + plateNumber);
+  // Owner
+  display.drawBitmap(0, 35, personBitmap, 12, 12, 1);
+  display.setCursor(16, 37);
+  display.print("Tit. : "+owner);
 
-    // Owner
-    display.drawBitmap(0, 35, personBitmap, 12, 12, 1);
-    display.setCursor(16, 37);
-    display.print("Tit. : " + owner);
+  // Data
+  display.drawBitmap(0, 50, checkBitmap, 12, 12, 1);
+  display.setCursor(16, 52);
+  display.print("Obs. : "+obs);
 
-    // Data
-    display.drawBitmap(0, 50, checkBitmap, 12, 12, 1);
-    display.setCursor(16, 52);
-    display.print("Obs. : " + obs);
+  //display.print(plateData);
 
-    display.display();
-  }
+  display.display();
+}
 
   static void connecting()
   {
@@ -376,16 +440,30 @@ void loop()
   Screen::setConfiguration();
 
   // Begin
-  showBegin();
-  delay(3000);
+  Screen::showBegin();
+  delay(10000);
 
   // Automatic mode
-  initAutomaticMode();
-  delay(3000);
+  Screen::initAutomaticMode();
+  delay(10000);
 
+  // Automatic mode
+  Screen::initAutomaticMode2();
+  delay(10000);
+
+  // Automatic mode
+  Screen::initAutomaticMode3();
+  delay(10000);
+
+  // Automatic mode
+  Screen::initAutomaticMode4();
+  delay(10000);
+
+  /*
   // Manual mode
   initManualMode();
   delay(3000);
+  */
 
   showEnd();
 
