@@ -1,96 +1,130 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SH110X.h>
+#include <WiFi.h>
+#include <WiFiAP.h>
+
+#include <HTTPClient.h> 
+#include <base64.h>
+
+// Pines seguros para usar con ESP32
+#define OLED_MOSI 23 // Cambiado de 12 a 23
+#define OLED_CLK 18  // Cambiado de 13 a 18
+#define OLED_DC 4    // Cambiado de 27 a 4
+#define OLED_CS -1   // Sigue sin usarse
+#define OLED_RST 5   // Cambiado de 14 a 5
+
+#define BTN_CHANGE_MODE 12
+
+Adafruit_SH1106G display = Adafruit_SH1106G(128, 64, OLED_MOSI, OLED_CLK, OLED_DC, OLED_RST, OLED_CS);
+
+const char *ssid = "LT";
+const char *password = "petrikldeidad";
+
+HTTPClient http;
+int httpCode;
+String response;
+
+String mostConfidentLabel;
+double confidence;
+
+const char* serverUrl = "http://192.168.252.193:8000/api/sendImg/";
+const char* contentType = "application/json";
+const char* cameraServer = "http://192.168.252.129/capture"; 
+
+bool automatic = true; // Estado inicial
+bool btnPreviousState = HIGH; // Estado previo del botón
+
+static const unsigned char PROGMEM vehicleBitmap[] = {
+    B00000000, B00000000,
+    B00111111, B11000000,
+    B00111111, B11000000,
+    B01100000, B11100000,
+    B01111111, B11100000,
+    B11111111, B11110000,
+    B11111111, B11110000,
+    B11111111, B11110000,
+    B11111111, B11110000,
+    B11100000, B01110000,
+    B01000000, B00100000,
+    B00000000, B00000000};
+
+static const unsigned char PROGMEM cameraBitmap[] = {
+    B00000000, B00000000,
+    B00001111, B00000000,
+    B01111111, B11100000,
+    B01111111, B11100000,
+    B01110000, B11100000,
+    B01110110, B11100000,
+    B01110110, B11100000,
+    B01110000, B11100000,
+    B01111111, B11100000,
+    B01111111, B11100000,
+    B00000000, B00000000,
+    B00000000, B00000000};
+
+static const unsigned char PROGMEM alertBitmap[] = {
+    B00000000, B00000000,
+    B00000110, B00000000,
+    B00000110, B00000000,
+    B00001111, B00000000,
+    B00001111, B00000000,
+    B00011001, B10000000,
+    B00111111, B11000000,
+    B00111001, B11000000,
+    B01111001, B11100000,
+    B01111111, B11100000,
+    B00000000, B00000000,
+    B00000000, B00000000};
+
+static const unsigned char PROGMEM radarBitmap[] = {
+    B00000000, B00000000,
+    B00000000, B00000000,
+    B00000000, B00000000,
+    B01000000, B00100000,
+    B11010000, B10110000,
+    B11110110, B11110000,
+    B11110110, B11110000,
+    B11010000, B10110000,
+    B01000000, B00100000,
+    B00000000, B00000000,
+    B00000000, B00000000,
+    B00000000, B00000000};
+
+static const unsigned char PROGMEM checkBitmap[] = {
+    B00000000, B00000000,
+    B00001111, B00000000,
+    B00111111, B11000000,
+    B00111111, B11000000,
+    B01111111, B01100000,
+    B01111110, B11100000,
+    B01101101, B11100000,
+    B01110011, B11100000,
+    B00111111, B11000000,
+    B00111111, B11000000,
+    B00001111, B00000000,
+    B00000000, B00000000};
+
+static const unsigned char PROGMEM personBitmap[] = {
+    B00001111, B00000000,
+    B00001111, B00000000,
+    B00011111, B10000000,
+    B00011111, B10000000,
+    B00001111, B00000000,
+    B00001111, B00000000,
+    B00000110, B00000000,
+    B00011111, B10000000,
+    B00111111, B11000000,
+    B01111111, B11100000,
+    B01111111, B11100000,
+    B00111111, B11000000};
 
 class Screen
 {
 private:
 public:
-  static const unsigned char PROGMEM vehicleBitmap[] = {
-      B00000000, B00000000,
-      B00111111, B11000000,
-      B00111111, B11000000,
-      B01100000, B11100000,
-      B01111111, B11100000,
-      B11111111, B11110000,
-      B11111111, B11110000,
-      B11111111, B11110000,
-      B11111111, B11110000,
-      B11100000, B01110000,
-      B01000000, B00100000,
-      B00000000, B00000000};
 
-  static const unsigned char PROGMEM cameraBitmap[] = {
-      B00000000, B00000000,
-      B00001111, B00000000,
-      B01111111, B11100000,
-      B01111111, B11100000,
-      B01110000, B11100000,
-      B01110110, B11100000,
-      B01110110, B11100000,
-      B01110000, B11100000,
-      B01111111, B11100000,
-      B01111111, B11100000,
-      B00000000, B00000000,
-      B00000000, B00000000};
-
-  static const unsigned char PROGMEM alertBitmap[] = {
-      B00000000, B00000000,
-      B00000110, B00000000,
-      B00000110, B00000000,
-      B00001111, B00000000,
-      B00001111, B00000000,
-      B00011001, B10000000,
-      B00111111, B11000000,
-      B00111001, B11000000,
-      B01111001, B11100000,
-      B01111111, B11100000,
-      B00000000, B00000000,
-      B00000000, B00000000};
-
-  static const unsigned char PROGMEM radarBitmap[] = {
-      B00000000, B00000000,
-      B00000000, B00000000,
-      B00000000, B00000000,
-      B01000000, B00100000,
-      B11010000, B10110000,
-      B11110110, B11110000,
-      B11110110, B11110000,
-      B11010000, B10110000,
-      B01000000, B00100000,
-      B00000000, B00000000,
-      B00000000, B00000000,
-      B00000000, B00000000};
-
-  static const unsigned char PROGMEM checkBitmap[] = {
-      B00000000, B00000000,
-      B00001111, B00000000,
-      B00111111, B11000000,
-      B00111111, B11000000,
-      B01111111, B01100000,
-      B01111110, B11100000,
-      B01101101, B11100000,
-      B01110011, B11100000,
-      B00111111, B11000000,
-      B00111111, B11000000,
-      B00001111, B00000000,
-      B00000000, B00000000};
-
-  static const unsigned char PROGMEM personBitmap[] = {
-      B00001111, B00000000,
-      B00001111, B00000000,
-      B00011111, B10000000,
-      B00011111, B10000000,
-      B00001111, B00000000,
-      B00001111, B00000000,
-      B00000110, B00000000,
-      B00011111, B10000000,
-      B00111111, B11000000,
-      B01111111, B11100000,
-      B01111111, B11100000,
-      B00111111, B11000000};
-
-  void setConfiguration()
+  static void setConfiguration()
   {
     // text display tests
     display.setTextSize(1);
@@ -98,20 +132,20 @@ public:
     // Special characters
   }
 
-  String getPlate()
+  static String getPlate()
   {
     String plateNumber = "ABC123"; // Placa almacenada en la variable
     return plateNumber;
   }
 
-  String getOwner(String plate)
+  static String getOwner(String plate)
   {
     String result = "Jose Perez";
     // String result = "No regist.";
     return result;
   }
 
-  String getObs(String plate)
+  static String getObs(String plate)
   {
     String result = "Sin RQ";
     // String result = "Con RQ";
@@ -119,7 +153,7 @@ public:
     return result;
   }
 
-  void showAutomaticModeTitle()
+  static void showAutomaticModeTitle()
   {
     display.clearDisplay();
     // Icon
@@ -130,7 +164,7 @@ public:
     display.display();
   }
 
-  void showManualModeTitle()
+  static void showManualModeTitle()
   {
     display.clearDisplay();
     // Icon
@@ -141,7 +175,7 @@ public:
     display.display();
   }
 
-  void initAutomaticMode()
+  static void initAutomaticMode()
   {
     showAutomaticModeTitle();
 
@@ -160,7 +194,7 @@ public:
     display.display();
   }
 
-  void initManualMode()
+  static void initManualMode()
   {
     showManualModeTitle();
 
@@ -181,7 +215,7 @@ public:
     delay(2000);
   }
 
-  void showPlate()
+  static void showPlate()
   {
 
     String plateNumber = getPlate();
@@ -206,56 +240,93 @@ public:
     display.display();
   }
 
-  static void paintMain(Adafruit_SH1106G *display)
+  static void connecting()
   {
-    static const unsigned char PROGMEM carBitMap[] = {
-        B00000000, B00000000,
-        B00111111, B11000000,
-        B00111111, B11000000,
-        B01100000, B11100000,
-        B01111111, B11100000,
-        B11111111, B11110000,
-        B11111111, B11110000,
-        B11111111, B11110000,
-        B11111111, B11110000,
-        B11100000, B01110000,
-        B01000000, B00100000,
-        B00000000, B00000000};
 
-    display->clearDisplay();
-
-    int x = (display->width() - 12) / 2;
-    int y = (display->height() - 12) / 2;
-
-    // Dibuja el bitmap del corazón
-    display->drawBitmap(x, y, carBitMap, 12, 12, 1);
-
-    // Muestra texto adicional
-    display->setTextSize(1);
-    display->setTextColor(1);
-    display->setCursor(15, 2);
-    display->println("Placa:");
-    display->display();
-
-    String plateNumber = "ABC-173"; // Placa almacenada en la variable
-    display->setCursor(52, 2);
-    display->println(plateNumber);
-    display->setRotation(2);
-    display->display();
+    display.clearDisplay();
+    display.display();
+    // Text
+    display.setCursor(15, 2);
+    display.print("Conectando...");
+    display.display();
   }
 };
-
-// Pines seguros para usar con ESP32
-#define OLED_MOSI 23 // Cambiado de 12 a 23
-#define OLED_CLK 18  // Cambiado de 13 a 18
-#define OLED_DC 4    // Cambiado de 27 a 4
-#define OLED_CS -1   // Sigue sin usarse
-#define OLED_RST 5   // Cambiado de 14 a 5
-
-Adafruit_SH1106G display = Adafruit_SH1106G(128, 64, OLED_MOSI, OLED_CLK, OLED_DC, OLED_RST, OLED_CS);
-
+void parseJsonString(String jsonString, String& mostConfidentLabel, double& confidence) {
+    if (jsonString.indexOf("error")>=0) {
+        mostConfidentLabel = "Error";
+        confidence = 0;
+    } else {
+        int index = jsonString.indexOf(',');
+        mostConfidentLabel = jsonString.substring(26, index-1);
+        confidence = jsonString.substring(index+16, jsonString.length()-1).toDouble();
+    }
+}
 void setup()
 {
+  Serial.begin(9600);
+  
+  pinMode(BTN_CHANGE_MODE, INPUT);
+
+  WiFi.mode(WIFI_AP);
+  WiFi.begin(ssid, password);
+
+  display.begin(0, true); // Reset incluido
+
+  // Set configuration
+  Screen::setConfiguration();
+
+  while (WiFi.status() != WL_CONNECTED) {
+    Screen::connecting();
+  }
+
+  // Automatic mode
+  Screen::initAutomaticMode();
+}
+
+void loop()
+{
+  // El código principal para repetirse continuamente puede ir aquí
+    /* if (WiFi.status() == WL_CONNECTED) {
+      HTTPClient http;
+      http.begin(cameraServer);
+      httpCode = http.GET();
+      if (httpCode > 0) {
+        if (httpCode == HTTP_CODE_OK) {
+          String image_data = http.getString();
+          http.end();
+          http.begin(serverUrl);
+          http.addHeader("Content-Type", contentType);
+          String payload = "{\"frame\":\"" + base64::encode((uint8_t*)image_data.c_str(), image_data.length()) + "\"}";
+          httpCode = http.POST(payload);
+          if (httpCode > 0) {
+
+            response = http.getString();
+
+            Serial.print("Response: ");
+            Serial.println(response);
+            
+            parseJsonString(response, mostConfidentLabel, confidence);
+            http.end();
+
+            if (mostConfidentLabel!="Error") {
+              if (confidence<60) {
+                servos.openGeneral();
+                mostConfidentLabel = "GENERALES";
+              } else {
+                if (mostConfidentLabel == "PLASTICO" || mostConfidentLabel == "VIDRIO") {
+                  servos.openPlastic();
+                } else if (mostConfidentLabel == "CARTON" || mostConfidentLabel == "PAPEL") {
+                  servos.openPaper();
+                } else {
+                  servos.openGeneral();
+                }
+              }
+              lcd.printDetection(mostConfidentLabel, confidence);
+            }
+          }
+        }
+      }
+    } */
   Serial.begin(9600);
   display.begin(0, true); // Reset incluido
   //Screen::paintMain(&display);
@@ -271,10 +342,4 @@ void setup()
   Screen::initManualMode();
   delay(3000);
 
-  delay(3000); // Pausa antes de continuar
-}
-
-void loop()
-{
-  // El código principal para repetirse continuamente puede ir aquí
 }
