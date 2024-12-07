@@ -153,20 +153,33 @@ public:
     return plateNumber;
   }
 
-  static String getOwner(String plate)
-  {
-    String result = "Jose Perez";
-    // String result = "No regist.";
-    return result;
+static String getOwner(String plate){
+  String result;
+  if(plate == "CNZ287"){
+    result = "Quispe M. J";
+  }else if(plate == "WO7292"){
+    result = "Cementos No";
+  }else if(plate == "B2V641"){
+    result = "Casamayor R";
+  }else{
+    result = "No registra";
   }
+  return result;
+}
 
-  static String getObs(String plate)
-  {
-    String result = "Sin RQ";
-    // String result = "Con RQ";
-    // String result = "-";
-    return result;
+static String getObs(String plate){
+  String result;
+  if(plate == "CNZ287"){
+    result = "Sin RQ";
+  }else if(plate == "WO7292"){
+    result = "RQ - Robo";
+  }else if(plate == "B2V641"){
+    result = "RQ - Robo";
+  }else{
+    result = "-";
   }
+  return result;
+}
 
   static void showBegin(){
   display.clearDisplay();
