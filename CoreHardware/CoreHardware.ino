@@ -168,7 +168,7 @@ public:
     return result;
   }
 
-  void showBegin(){
+  static void showBegin(){
   display.clearDisplay();
   // Icon
   display.drawBitmap(23, 15, logoBitmap, 12, 12, 1);
@@ -181,7 +181,7 @@ public:
   display.display();
 }
 
-  void showEnd(){
+  static void showEnd(){
   display.clearDisplay();
   // Icon
   display.drawBitmap(23, 15, logoBitmap, 12, 12, 1);
@@ -312,7 +312,7 @@ static void initAutomaticMode4(){
 
     // Aqui se debe imprimir el resultado de la plac detectada
     display.setCursor(10, 25);
-    showPlate();
+    // showPlate();
     display.display();
     delay(2000);
   }
@@ -378,14 +378,14 @@ void setup()
   display.begin(0, true); // Reset incluido
 
   // Set configuration
-  Screen::setConfiguration();
+  /* Screen::setConfiguration();
 
   while (WiFi.status() != WL_CONNECTED) {
     Screen::connecting();
   }
 
   // Automatic mode
-  Screen::initAutomaticMode();
+  Screen::initAutomaticMode(); */
 }
 
 void loop()
@@ -465,6 +465,6 @@ void loop()
   delay(3000);
   */
 
-  showEnd();
+  Screen::showEnd();
 
 }
