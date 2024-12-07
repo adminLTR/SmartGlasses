@@ -35,6 +35,21 @@ const char* cameraServer = "http://192.168.252.129/capture";
 bool automatic = true; // Estado inicial
 bool btnPreviousState = HIGH; // Estado previo del botón
 
+static const unsigned char PROGMEM logoBitmap[] = {
+    B00000000, B00000000,
+    B00000000, B00000000,
+    B00000000, B00000000,
+    B11111001, B11110000,
+    B11111111, B11110000,
+    B10011111, B11110000,
+    B11111001, B11110000,
+    B11111001, B11110000,
+    B01111001, B11100000,
+    B00000000, B00000000,
+    B00000000, B00000000,
+    B00000000, B00000000
+};
+
 static const unsigned char PROGMEM vehicleBitmap[] = {
     B00000000, B00000000,
     B00111111, B11000000,
@@ -151,6 +166,32 @@ public:
     // String result = "Con RQ";
     // String result = "-";
     return result;
+  }
+
+  void showBegin(){
+    display.clearDisplay();
+    // Icon
+    display.drawBitmap(23, 15, logoBitmap, 12, 12, 1);
+    // Text
+    display.setCursor(40, 17);
+    display.print("Smart Glass");
+    display.setCursor(30, 32);
+    display.write(173);
+    display.print("Bienvenido!");
+    display.display();
+  }
+
+  void showEnd(){
+    display.clearDisplay();
+    // Icon
+    display.drawBitmap(23, 15, logoBitmap, 12, 12, 1);
+    // Text
+    display.setCursor(40, 17);
+    display.print("Smart Glass");
+    display.setCursor(20, 32);
+    display.write(173);
+    display.print("Hasta luego!");
+    display.display();
   }
 
   static void showAutomaticModeTitle()
@@ -334,12 +375,18 @@ void loop()
   // Set configuration
   Screen::setConfiguration();
 
+  // Begin
+  showBegin();
+  delay(3000);
+
   // Automatic mode
-  Screen::initAutomaticMode();
+  initAutomaticMode();
   delay(3000);
 
   // Manual mode
-  Screen::initManualMode();
+  initManualMode();
   delay(3000);
+
+  showEnd();
 
 }
